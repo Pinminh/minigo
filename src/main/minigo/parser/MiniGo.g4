@@ -24,19 +24,13 @@ options{
 	language=Python3;
 }
 
-program  : decl+ EOF ;
+program: EOF;
 
-decl: funcdecl | vardecl  ;
+// whitespace characters
 
-vardecl: 'var' ID 'int' ';' ;
+LF: '\n' -> skip;
 
-funcdecl: 'func' ID '(' ')' '{' '}' ';' ;
-
-ID: [a-z]+;
-
-NL: '\n' -> skip; //skip newlines
-
-WS : [ \t\r]+ -> skip ; // skip spaces, tabs 
+WS : [ \t\f\r]+ -> skip;
 
 ERROR_CHAR: .;
 ILLEGAL_ESCAPE:.;
