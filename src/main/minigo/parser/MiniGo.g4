@@ -65,8 +65,8 @@ CONTINUE: 'continue';
 BREAK: 'break';
 RANGE: 'range';
 NIL: 'nil';
-TRUE: 'true';
-FALSE: 'false';
+fragment TRUE: 'true';
+fragment FALSE: 'false';
 
 // arithmetic operators
 
@@ -114,6 +114,30 @@ LS: '[';    // squared bracket
 RS: ']';
 CM: ',';    // comma
 SC: ';';    // semicolon
+
+// integer literal
+
+INTLIT: DECINT | BININT | OCTINT | HEXINT;
+fragment DECINT: [1-9] [0-9]* | [0]+;
+fragment BININT: '0' [bB] [01]+;
+fragment OCTINT: '0' [oO] [0-7]+;
+fragment HEXINT: '0' [xX] [0-9a-fA-F]+;
+
+// floating-point literal
+
+FLOATLIT: FLOATINT DOT FLOATFRAC? FLOATEXP?;
+fragment FLOATINT: [0-9]+;
+fragment FLOATFRAC: [0-9]+;
+fragment FLOATEXP: [eE] [+-]? [0-9]+;
+
+// string literal
+
+STRLIT: DQ (~[\\"] | '\\n' | '\\t' | '\\r' | '\\"' | '\\\\')* DQ;
+fragment DQ: '"';
+
+// boolean literal
+
+BOOLLIT: TRUE | FALSE;
 
 // identifiers
 
