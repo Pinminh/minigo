@@ -32,6 +32,23 @@ LF: '\n' -> skip;
 
 WS : [ \t\f\r]+ -> skip;
 
+// program comments
+// ambiguity: nested comments are necessarily closed?
+
+CMT: (SL_CMT | ML_CMT) -> skip;
+
+SL_CMT: SL_CMT_INIT .*? SL_CMT_END;
+fragment SL_CMT_INIT: '//';
+fragment SL_CMT_END: '\n' | EOF;
+
+ML_CMT: ML_CMT_INIT (ML_CMT | .)*?  ML_CMT_END -> skip;
+fragment ML_CMT_INIT: '/*';
+fragment ML_CMT_END: '*/';
+
+// identifiers
+
+VAR: [a-z] [a-zA-Z0-9_]*;
+
 ERROR_CHAR: .;
 ILLEGAL_ESCAPE:.;
 UNCLOSE_STRING:.;
