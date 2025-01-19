@@ -68,6 +68,42 @@ NIL: 'nil';
 TRUE: 'true';
 FALSE: 'false';
 
+// arithmetic operators
+
+ADD: '+';
+SUB: '-';
+MUL: '*';
+DIV: '/';
+MOD: '%';
+
+// relational operators
+
+EQ: '==';
+NEQ: '!=';
+LT: '<';
+LTE: '<=';
+GT: '>';
+GTE: '>=';
+
+// logical operators
+
+AND: '&&';
+OR: '||';
+NOT: '!';
+
+// assignment operators
+
+ASGN: '=';
+ADDEQ: '+=';
+SUBEQ: '-=';
+MULEQ: '*=';
+DIVEQ: '/=';
+MODEQ: '%=';
+
+// dot operator
+
+DOT: '.';
+
 // identifiers
 
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
