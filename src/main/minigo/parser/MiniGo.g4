@@ -104,6 +104,17 @@ MODEQ: '%=';
 
 DOT: '.';
 
+// separators
+
+LP: '(';    // parenthesis
+RP: ')';
+LB: '{';    // brace
+RB: '}';
+LS: '[';    // squared bracket
+RS: ']';
+CM: ',';    // comma
+SC: ';';    // semicolon
+
 // identifiers
 
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
