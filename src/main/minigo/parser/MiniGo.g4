@@ -45,9 +45,32 @@ ML_CMT: ML_CMT_INIT (ML_CMT | .)*?  ML_CMT_END -> skip;
 fragment ML_CMT_INIT: '/*';
 fragment ML_CMT_END: '*/';
 
+// keywords
+
+IF: 'if';
+ELSE: 'else';
+FOR: 'for';
+RETURN: 'return';
+FUNC: 'func';
+TYPE: 'type';
+STRUCT: 'struct';
+INTERFACE: 'interface';
+STRING: 'string';
+INT: 'int';
+FLOAT: 'float';
+BOOLEAN: 'boolean';
+CONST: 'const';
+VAR: 'var';
+CONTINUE: 'continue';
+BREAK: 'break';
+RANGE: 'range';
+NIL: 'nil';
+TRUE: 'true';
+FALSE: 'false';
+
 // identifiers
 
-VAR: [a-z] [a-zA-Z0-9_]*;
+ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 
 ERROR_CHAR: .;
 ILLEGAL_ESCAPE:.;
