@@ -1,3 +1,5 @@
+// 2212059 - Nguyen Hong Minh
+
 grammar MiniGo;
 
 @lexer::header {
@@ -5,9 +7,31 @@ from lexererr import *
 }
 
 @lexer::members {
+    last_tk = None
+    rep_list = []
 
 def emit(self):
-    tk = self.type
+    self.rep_list = [
+        self.ID,
+        self.INTLIT,
+        self.FLOATLIT,
+        self.BOOLLIT,
+        self.STRLIT,
+        self.INT,
+        self.FLOAT,
+        self.BOOLEAN,
+        self.STRING,
+        self.RETURN,
+        self.CONTINUE,
+        self.BREAK,
+        self.RP,
+        self.RB,
+        self.RS
+    ];
+    t = super().emit();
+    tk = t.type;
+    self.last_tk = t;
+
     if tk == self.UNCLOSE_STRING:
         result = super().emit();
         raise UncloseString(result.text);
@@ -18,7 +42,7 @@ def emit(self):
         result = super().emit();
         raise ErrorToken(result.text);
     else:
-        return super().emit();
+        return t;
 }
 
 options{
@@ -146,7 +170,8 @@ ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 
 // whitespace characters
 
-WS : [ \t\f\r\n]+ -> skip;  // temporarily skip newlines
+WS : [ \t\f]+ -> skip;
+NL: [\r\n]+ -> skip;
 
 ERROR_CHAR: .;
 ILLEGAL_ESCAPE: .;
@@ -179,8 +204,7 @@ bltinlit: primlit | complit;
 
 // terminators
 
-compterm: SC;   // temporary terminator
-stmtterm: SC;   // temporary terminator
+stmtterm: SC?;   // temporary terminator
 
 // parameter list declaration
 
@@ -218,13 +242,13 @@ elemlit: primlit | structlit;
 
 // struct declaration
 
-structdecl: TYPE ID STRUCT structfielddecl;
+structdecl: TYPE ID STRUCT structfielddecl SC?;
 
 structfielddecl: LB nullfieldlist RB;
 
 nullfieldlist: fieldlist | ;
 fieldlist: field fieldlist | field;
-field: ID bltintyp compterm;
+field: ID bltintyp stmtterm;
 
 // struct literal (struct initialization)
 
@@ -247,7 +271,7 @@ methodlistdecl: LB nullmethodlist RB;
 nullmethodlist: methodlist | ;
 methodlist: method methodlist | method;
 
-method: ID paramlistdecl returntyp? compterm;    // return type includes interface?
+method: ID paramlistdecl returntyp? stmtterm;    // return type includes interface?
 
 // variable declaration
 
@@ -292,7 +316,7 @@ addexpr: addexpr (MUL | DIV | MOD) mulexpr | mulexpr;
 mulexpr: SUB mulexpr | NOT mulexpr | notexpr;
 notexpr: notexpr bracketop | notexpr mcallop | notexpr structop | dotexpr;
 dotexpr: fcallop | callexpr;
-callexpr: LP expr RB | parenexpr;
+callexpr: LP expr RP | parenexpr;
 parenexpr: operand;
 
 bracketop: LS expr RS;
@@ -306,7 +330,7 @@ evalexpr: 'evalexpr';   // incomplete, and is it necessary?
 
 // statement declaration
 
-stmt: semistmt stmtterm | optsemistmt compterm | nosemistmt;
+stmt: semistmt stmtterm | optsemistmt stmtterm | nosemistmt stmtterm;
 
 semistmt: vardecl | constdecl | asgnstmt | breakstmt | continuestmt | callstmt | returnstmt;
 optsemistmt: structdecl | interfacedecl;
