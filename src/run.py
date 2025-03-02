@@ -7,6 +7,10 @@ from antlr4 import *
 #Make sure that ANTLR_JAR is set to antlr-4.9.2-complete.jar
 ANTLR_JAR = os.environ.get('ANTLR_JAR')
 TARGET = '../target/main/minigo/parser' if os.name == 'posix' else os.path.normpath('../target/')
+locpath = ['./main/minigo/parser/','./main/minigo/astgen/','./main/minigo/utils/']
+for p in locpath:
+    if not p in sys.path:
+        sys.path.append(p)
 
 def main(argv):
     global ANTLR_JAR, TARGET
@@ -47,11 +51,15 @@ def main(argv):
             printUsage()
         elif argv[1] == 'LexerSuite':
             from LexerSuite import LexerSuite
-            suite = unittest.makeSuite(LexerSuite)
+            suite = unittest.TestLoader().loadTestsFromTestCase(LexerSuite)
             test(suite)
         elif argv[1] == 'ParserSuite':
             from ParserSuite import ParserSuite
-            suite = unittest.makeSuite(ParserSuite)
+            suite = unittest.TestLoader().loadTestsFromTestCase(ParserSuite)
+            test(suite)
+        elif argv[1] == 'ASTGenSuite':
+            from ASTGenSuite import ASTGenSuite
+            suite = unittest.TestLoader().loadTestsFromTestCase(ASTGenSuite)
             test(suite)
         else:
             printUsage()
@@ -75,6 +83,7 @@ def printUsage():
     print("python3 run.py gen")
     print("python3 run.py test LexerSuite")
     print("python3 run.py test ParserSuite")
+    print("python3 run.py test ASTGenSuite")
 
 if __name__ == "__main__":
    main(sys.argv[1:])
