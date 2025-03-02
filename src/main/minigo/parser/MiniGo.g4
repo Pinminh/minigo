@@ -339,7 +339,7 @@ nosemistmt: ifstmt | forstmt | funcdecl | methoddecl;
 // asignment statement
 
 asgnstmt: varexpr asgnop expr;
-varexpr: ID | vararr | varstruct;
+varexpr: varexpr bracketop | varexpr structop | ID;
 
 vararr: ID arridxlist;
 arridxlist: bracketop arridxlist | bracketop;
