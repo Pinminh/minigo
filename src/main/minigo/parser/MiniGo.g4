@@ -315,7 +315,7 @@ callexpr: LP expr RP | parenexpr;
 parenexpr: operand;
 
 bracketop: LS expr RS;
-mcallop: DOT fcallop;
+mcallop: DOT ID arglistdecl;
 fcallop: ID arglistdecl;
 structop: DOT ID;
 
