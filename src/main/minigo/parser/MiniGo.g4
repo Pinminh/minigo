@@ -184,7 +184,6 @@ UNCLOSE_STRING: .;
 // type classification
 
 primtyp: INT | FLOAT | BOOLEAN | STRING;
-comptyp: STRUCT | INTERFACE;
 
 arrvaltyp: primtyp | STRUCT;
 
@@ -192,7 +191,7 @@ arrtyp: dimlist arrvaltyp;
 dimlist: dim dimlist | dim;
 dim: LS (INTLIT | ID) RS;   // missing ID constant check
 
-bltintyp: primtyp | comptyp | arrtyp;
+bltintyp: primtyp | arrtyp;
 
 returntyp: bltintyp;    // return type can be interface?
 
@@ -241,7 +240,7 @@ elemlist: recurlist | litlist;
 recurlist: elemlistdecl CM recurlist | elemlistdecl;
 litlist: elemlit CM litlist | elemlit;
 
-elemlit: primlit | structlit;
+elemlit: primlit | structlit | ID;
 
 // struct declaration
 
