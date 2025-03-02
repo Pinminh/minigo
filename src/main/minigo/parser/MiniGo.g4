@@ -361,8 +361,15 @@ elseifstmt: ELSE IF logicexpr block;
 forstmt: basicfor | standfor | rangefor;
 
 basicfor: FOR expr block;
-standfor: FOR asgnstmt SC expr SC asgnstmt block;
-rangefor: FOR ID CM ID ASGN RANGE (ID | arrlit) block;
+standfor: FOR forinit SC forcond SC forupdt block;
+rangefor: FOR ID CM ID ASGN RANGE expr block;
+
+forinit: forasgn | forvardecl;
+forasgn: ID ASGN expr;
+forvardecl: VAR ID INIT expr;
+
+forcond: expr;
+forupdt: asgnstmt;
 
 // break-continue statement
 
