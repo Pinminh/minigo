@@ -209,11 +209,14 @@ stmtterm: SC?;   // temporary terminator
 // parameter list declaration
 
 paramlistdecl: LP nullparamlist RP;
-nullparamlist: paramlist | ;
+nullparamlist: sharedtyplist | pairtyplist | ;
 
-paramlist: sharedtyplist CM paramlist | sharedtyplist;
 sharedtyplist: params bltintyp; // parameter type includes interface?
 params: ID CM params | ID;
+
+pairtyplist: parampairs CM pairtyplist | parampairs;
+parampairs: parampair CM parampairs | parampair;
+parampair: ID bltintyp;
 
 // argument list declaration
 
