@@ -242,11 +242,7 @@ elemlit: primlit | structlit;
 
 // struct declaration
 
-structdecl: TYPE ID STRUCT structfielddecl SC?;
-
-structfielddecl: LB nullfieldlist RB;
-
-nullfieldlist: fieldlist | ;
+structdecl: TYPE ID STRUCT LB fieldlist RB stmtterm;
 fieldlist: field fieldlist | field;
 field: ID bltintyp stmtterm;
 
@@ -265,10 +261,7 @@ fieldval: ID CL expr;
 
 // interface declaration
 
-interfacedecl: TYPE ID INTERFACE methodlistdecl;
-
-methodlistdecl: LB nullmethodlist RB;
-nullmethodlist: methodlist | ;
+interfacedecl: TYPE ID INTERFACE LB methodlist RB stmtterm;
 methodlist: method methodlist | method;
 
 method: ID paramlistdecl returntyp? stmtterm;    // return type includes interface?
