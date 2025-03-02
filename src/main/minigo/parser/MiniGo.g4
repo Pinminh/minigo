@@ -185,7 +185,7 @@ UNCLOSE_STRING: .;
 
 primtyp: INT | FLOAT | BOOLEAN | STRING;
 
-arrvaltyp: primtyp | STRUCT;
+arrvaltyp: primtyp | ID;
 
 arrtyp: dimlist arrvaltyp;
 dimlist: dim dimlist | dim;
@@ -386,4 +386,4 @@ returnstmt: RETURN expr?;
 
 // program
 
-program: nullstmtlist EOF;
+program: stmtlist EOF;
