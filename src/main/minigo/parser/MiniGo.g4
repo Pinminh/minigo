@@ -232,9 +232,7 @@ arrdecl: VAR ID arrtyp;
 
 arrlit: arrtyp elemlistdecl;
 
-elemlistdecl: LB nullelemlist RB;
-
-nullelemlist: elemlist | ;
+elemlistdecl: LB elemlist RB;
 elemlist: recurlist | litlist;
 
 recurlist: elemlistdecl CM recurlist | elemlistdecl;
