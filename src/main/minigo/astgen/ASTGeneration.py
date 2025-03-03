@@ -349,7 +349,11 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#constdecl.
     def visitConstdecl(self, ctx:MiniGoParser.ConstdeclContext):
-        return self.visitChildren(ctx)
+        # constdecl: CONST ID varinit
+        const_name = ctx.ID().getText()
+        const_type = None
+        const_init = self.visit(ctx.varinit())
+        return ConstDecl(const_name, const_type, const_init)
 
 
     # Visit a parse tree produced by MiniGoParser#funcdecl.
