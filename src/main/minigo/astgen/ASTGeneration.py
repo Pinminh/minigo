@@ -225,17 +225,30 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#structdecl.
     def visitStructdecl(self, ctx:MiniGoParser.StructdeclContext):
-        return self.visitChildren(ctx)
+        # structdecl: TYPE ID STRUCT LB fieldlist RB stmtterm
+        # StructType(name:str, elements:List[Tuple(str, Type)], List[MethodDecl])
+        name = ctx.ID().getText()
+        elements = self.visit(ctx.fieldlist())
+        methods = []
+        return StructType(name, elements, methods)
 
 
     # Visit a parse tree produced by MiniGoParser#fieldlist.
     def visitFieldlist(self, ctx:MiniGoParser.FieldlistContext):
-        return self.visitChildren(ctx)
+        # fieldlist: field fieldlist | field
+        if ctx.fieldlist():
+            field = self.visit(ctx.field())
+            flist = self.visit(ctx.fieldlist())
+            return [field] + flist
+        return [self.visit(ctx.field())]
 
 
     # Visit a parse tree produced by MiniGoParser#field.
     def visitField(self, ctx:MiniGoParser.FieldContext):
-        return self.visitChildren(ctx)
+        # field: ID bltintyp stmtterm
+        attr_name = ctx.ID().getText()
+        attr_type = self.visit(ctx.bltintyp())
+        return (attr_name, attr_type)
 
 
     # Visit a parse tree produced by MiniGoParser#structlit.

@@ -156,9 +156,11 @@ fragment FLOATEXP: [eE] [+-]? [0-9]+;
 
 // string literal
 
-STRLIT: DQ (~[\\"] | ESCAPED)* DQ;
+STRLIT: DQ CHARS* DQ;
 fragment DQ: '"';
+fragment CHARS: ~[\\"] | ESCAPED;
 fragment ESCAPED: '\\n' | '\\t' | '\\r' | '\\"' | '\\\\';
+fragment ILL_ESC: '\\' ~[ntr"\\] | '\\';
 
 // boolean literal
 
@@ -173,9 +175,17 @@ ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 WS : [ \t\f]+ -> skip;
 NL: [\r\n]+ -> skip;
 
-ERROR_CHAR: .;
-ILLEGAL_ESCAPE: .;
-UNCLOSE_STRING: .;
+// errors
+
+ILLEGAL_ESCAPE: DQ CHARS* ILL_ESC {
+    raise IllegalEscape(self.text)
+};
+UNCLOSE_STRING: DQ CHARS* {
+    raise UncloseString(self.text)
+};
+ERROR_CHAR: . {
+    raise ErrorToken(self.text)
+};
 
 /*
     parser rules
