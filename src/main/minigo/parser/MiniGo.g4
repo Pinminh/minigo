@@ -384,7 +384,8 @@ continuestmt: CONTINUE;
 
 // call statement
 
-callstmt: fcallop | ID mcallop;
+callstmt: fcallop | varcall mcallop;
+varcall: varcall bracketop | varcall structop | varcall mcallop | ID;
 
 // return statement
 

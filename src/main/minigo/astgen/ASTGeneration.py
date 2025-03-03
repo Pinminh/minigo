@@ -556,10 +556,10 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#stmt.
     def visitStmt(self, ctx:MiniGoParser.StmtContext):
-        # stmt: semistmt stmtterm | optsemistmt stmtterm | nosemistmt stmtterm
+        # stmt: semistmt stmtterm | optsemistmt stmtterm | nosemistmt stmtterm | exstmt stmtterm
         return self.visit(ctx.getChild(0))
-
-
+    
+    
     # Visit a parse tree produced by MiniGoParser#semistmt.
     def visitSemistmt(self, ctx:MiniGoParser.SemistmtContext):
         # semistmt: vardecl | constdecl | asgnstmt | breakstmt | continuestmt | callstmt | returnstmt
@@ -604,26 +604,6 @@ class ASTGeneration(MiniGoVisitor):
         if arrcell:
             return ArrayCell(lexpr, arrcell)
         return lexpr
-
-
-    # Visit a parse tree produced by MiniGoParser#vararr.
-    def visitVararr(self, ctx:MiniGoParser.VararrContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#arridxlist.
-    def visitArridxlist(self, ctx:MiniGoParser.ArridxlistContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#varstruct.
-    def visitVarstruct(self, ctx:MiniGoParser.VarstructContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#fieldacclist.
-    def visitFieldacclist(self, ctx:MiniGoParser.FieldacclistContext):
-        return self.visitChildren(ctx)
 
 
     # Visit a parse tree produced by MiniGoParser#ifstmt.
@@ -703,22 +683,53 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#breakstmt.
     def visitBreakstmt(self, ctx:MiniGoParser.BreakstmtContext):
-        return self.visitChildren(ctx)
+        # breakstmt: BREAK
+        return Break()
 
 
     # Visit a parse tree produced by MiniGoParser#continuestmt.
     def visitContinuestmt(self, ctx:MiniGoParser.ContinuestmtContext):
-        return self.visitChildren(ctx)
+        # continuestmt: CONTINUE
+        return Continue()
 
 
     # Visit a parse tree produced by MiniGoParser#callstmt.
     def visitCallstmt(self, ctx:MiniGoParser.CallstmtContext):
-        return self.visitChildren(ctx)
+        # callstmt: fcallop | varcall mcallop
+        if ctx.fcallop():
+            return self.visit(ctx.fcallop())
+        receiver = self.visit(ctx.varcall())
+        name, args = self.visit(ctx.mcallop())
+        return MethCall(receiver, name, args)
+
+
+    # Visit a parse tree produced by MiniGoParser#varcall.
+    def visitVarcall(self, ctx:MiniGoParser.VarcallContext, arrcell=[]):
+        # varcall: varcall bracketop | varcall structop | varcall mcallop | ID
+        if ctx.bracketop():
+            cell = [self.visit(ctx.bracketop())] + arrcell
+            return self.visitVarcall(ctx.varcall(), cell)
+        if ctx.structop():
+            receiver = self.visit(ctx.varcall())
+            field = self.visit(ctx.structop())
+            lexpr = FieldAccess(receiver, field)
+        if ctx.mcallop():
+            receiver = self.visit(ctx.varcall())
+            method, args = self.visit(ctx.mcallop())
+            lexpr = MethCall(receiver, method, args)
+        if ctx.ID():
+            lexpr = Id(ctx.ID().getText())
+        if arrcell:
+            return ArrayCell(lexpr, arrcell)
+        return lexpr
 
 
     # Visit a parse tree produced by MiniGoParser#returnstmt.
     def visitReturnstmt(self, ctx:MiniGoParser.ReturnstmtContext):
-        return self.visitChildren(ctx)
+        # returnstmt: RETURN expr?
+        # Return(expr:Expr)
+        expr = self.visit(ctx.expr()) if ctx.expr() else None
+        return Return(expr)
 
 
     # Visit a parse tree produced by MiniGoParser#program.
