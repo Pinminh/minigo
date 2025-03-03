@@ -690,32 +690,52 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#ifstmt.
     def visitIfstmt(self, ctx:MiniGoParser.IfstmtContext):
-        return self.visitChildren(ctx)
+        # ifstmt: IF logicexpr block elseportion
+        # If(expr:Expr, thenStmt:Stmt, elseStmt:Stmt)
+        logic = self.visit(ctx.logicexpr())
+        thenstmt = self.visit(ctx.block())
+        elsestmt = self.visit(ctx.elseportion())
+        return If(logic, thenstmt, elsestmt)
 
 
     # Visit a parse tree produced by MiniGoParser#logicexpr.
     def visitLogicexpr(self, ctx:MiniGoParser.LogicexprContext):
-        return self.visitChildren(ctx)
+        # logicexpr: LP expr RP
+        return self.visit(ctx.expr())
 
 
     # Visit a parse tree produced by MiniGoParser#elseportion.
     def visitElseportion(self, ctx:MiniGoParser.ElseportionContext):
-        return self.visitChildren(ctx)
-
+        # elseportion: elseiflist? elseonly?
+        elseblock = self.visit(ctx.elseonly()) if ctx.elseonly() else None
+        if ctx.elseiflist():
+            return self.visitElseiflist(ctx.elseiflist(), elseblock)
+        return elseblock
+            
 
     # Visit a parse tree produced by MiniGoParser#elseonly.
     def visitElseonly(self, ctx:MiniGoParser.ElseonlyContext):
-        return self.visitChildren(ctx)
+        # elseonly: ELSE block
+        return self.visit(ctx.block())
 
 
     # Visit a parse tree produced by MiniGoParser#elseiflist.
-    def visitElseiflist(self, ctx:MiniGoParser.ElseiflistContext):
-        return self.visitChildren(ctx)
+    def visitElseiflist(self, ctx:MiniGoParser.ElseiflistContext, elseblock=None):
+        # elseiflist: elseifstmt elseiflist | elseifstmt
+        logic, thenstmt = self.visit(ctx.elseifstmt())
+        if ctx.elseiflist():
+            elsestmt = self.visitElseiflist(ctx.elseiflist(), elseblock)
+            return If(logic, thenstmt, elsestmt)
+        return If(logic, thenstmt, elseblock)
+        
 
 
     # Visit a parse tree produced by MiniGoParser#elseifstmt.
     def visitElseifstmt(self, ctx:MiniGoParser.ElseifstmtContext):
-        return self.visitChildren(ctx)
+        # elseifstmt: ELSE IF logicexpr block
+        logic = self.visit(ctx.logicexpr())
+        thenstmt = self.visit(ctx.block())
+        return logic, thenstmt
 
 
     # Visit a parse tree produced by MiniGoParser#forstmt.
