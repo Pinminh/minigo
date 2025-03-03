@@ -220,10 +220,17 @@ stmtterm: SC?;   // temporary terminator
 
 paramlistdecl: LP nullparamlist RP;
 nullparamlist: paramlist | ;
-paramlist: sharedtyplist CM paramlist | sharedtyplist;
+paramlist: sharedparamlist CM paramlist | sharedparamlist;
 
-sharedtyplist: params availtyp; // parameter type includes interface?
+sharedparamlist: params availtyp; // parameter type includes interface?
 params: ID CM params | ID;
+
+paramtyplistdecl: LP nullparamtyplist RP;
+nullparamtyplist: paramtyplist | ;
+paramtyplist: sharedtyplist CM paramtyplist | sharedtyplist;
+
+sharedtyplist: paramtyps availtyp; // parameter type includes interface?
+paramtyps: ID CM paramtyps | ID;
 
 // argument list declaration
 
@@ -272,7 +279,7 @@ fieldval: ID CL expr;
 interfacedecl: TYPE ID INTERFACE LB methodlist RB stmtterm;
 methodlist: method methodlist | method;
 
-method: ID paramlistdecl returntyp? stmtterm;    // return type includes interface?
+method: ID paramtyplistdecl returntyp? stmtterm;    // return type includes interface?
 
 // variable declaration
 
@@ -331,9 +338,9 @@ evalexpr: 'evalexpr';   // incomplete, and is it necessary?
 
 // statement declaration
 
-stmt: semistmt stmtterm | optsemistmt stmtterm | nosemistmt stmtterm;
+stmt: semistmt stmtterm | optsemistmt stmtterm | nosemistmt stmtterm | returnstmt SC;
 
-semistmt: vardecl | constdecl | asgnstmt | breakstmt | continuestmt | callstmt | returnstmt;
+semistmt: vardecl | constdecl | asgnstmt | breakstmt | continuestmt | callstmt;
 optsemistmt: structdecl | interfacedecl;
 nosemistmt: ifstmt | forstmt | funcdecl | methoddecl;
 

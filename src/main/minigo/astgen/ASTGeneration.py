@@ -117,41 +117,41 @@ class ASTGeneration(MiniGoVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MiniGoParser#paramlistdecl.
-    def visitParamlistdecl(self, ctx:MiniGoParser.ParamlistdeclContext):
-        # paramlistdecl: LP nullparamlist RP
-        return self.visit(ctx.nullparamlist())
+    # Visit a parse tree produced by MiniGoParser#paramtyplistdecl.
+    def visitParamtyplistdecl(self, ctx:MiniGoParser.ParamtyplistdeclContext):
+        # paramtyplistdecl: LP nullparamtyplist RP
+        return self.visit(ctx.nullparamtyplist())
 
 
-    # Visit a parse tree produced by MiniGoParser#nullparamlist.
-    def visitNullparamlist(self, ctx:MiniGoParser.NullparamlistContext):
-        # nullparamlist: paramlist | 
-        return self.visit(ctx.paramlist()) if ctx.paramlist() else []
+    # Visit a parse tree produced by MiniGoParser#nullparamtyplist.
+    def visitNullparamtyplist(self, ctx:MiniGoParser.NullparamtyplistContext):
+        # nullparamtyplist: paramtyplist | 
+        return self.visit(ctx.paramtyplist()) if ctx.paramtyplist() else []
 
 
-    # Visit a parse tree produced by MiniGoParser#paramlist.
-    def visitParamlist(self, ctx:MiniGoParser.ParamlistContext):
-        # paramlist: sharedtyplist CM paramlist | sharedtyplist
-        if ctx.paramlist():
+    # Visit a parse tree produced by MiniGoParser#paramtyplist.
+    def visitParamtyplist(self, ctx:MiniGoParser.ParamtyplistContext):
+        # paramtyplist: sharedtyplist CM paramtyplist | sharedtyplist
+        if ctx.CM():
             sharedtyp = self.visit(ctx.sharedtyplist())
-            typlist = self.visit(ctx.paramlist())
+            typlist = self.visit(ctx.paramtyplist())
             return sharedtyp + typlist
         return self.visit(ctx.sharedtyplist())
     
 
     # Visit a parse tree produced by MiniGoParser#sharedtyplist.
     def visitSharedtyplist(self, ctx:MiniGoParser.SharedtyplistContext):
-        # sharedtyplist: params availtyp
-        shared_num = self.visit(ctx.params())
+        # sharedtyplist: paramtyps availtyp
+        shared_num = self.visit(ctx.paramtyps())
         paramtyp = self.visit(ctx.availtyp())
         return shared_num * [paramtyp]
 
 
-    # Visit a parse tree produced by MiniGoParser#params.
-    def visitParams(self, ctx:MiniGoParser.ParamsContext):
-        # params: ID CM params | ID
+    # Visit a parse tree produced by MiniGoParser#paramtyps.
+    def visitParamtyps(self, ctx:MiniGoParser.ParamtypsContext):
+        # paramtyps: ID CM paramtyps | ID
         if ctx.CM():
-            return 1 + self.visit(ctx.params())
+            return 1 + self.visit(ctx.paramtyps())
         return 1
 
 
@@ -320,9 +320,9 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#method.
     def visitMethod(self, ctx:MiniGoParser.MethodContext):
-        # method: ID paramlistdecl returntyp? stmtterm
+        # method: ID paramtyplistdecl returntyp? stmtterm
         name = ctx.ID().getText()
-        params = self.visit(ctx.paramlistdecl())
+        params = self.visit(ctx.paramtyplistdecl())
         rettyp = self.visit(ctx.returntyp()) if ctx.returntyp() else VoidType()
         return Prototype(name, params, rettyp)
 
@@ -381,27 +381,86 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#funcdecl.
     def visitFuncdecl(self, ctx:MiniGoParser.FuncdeclContext):
-        return self.visitChildren(ctx)
+        # funcdecl: FUNC ID paramlistdecl returntyp? block
+        name = ctx.ID().getText()
+        params = self.visit(ctx.paramlistdecl())
+        rettyp = self.visit(ctx.returntyp()) if ctx.returntyp() else VoidType()
+        body = self.visit(ctx.block())
+        return FuncDecl(name, params, rettyp, body)
 
+    
+    # Visit a parse tree produced by MiniGoParser#paramlistdecl.
+    def visitParamlistdecl(self, ctx:MiniGoParser.ParamlistdeclContext):
+        # paramlistdecl: LP nullparamlist RP
+        return self.visit(ctx.nullparamlist())
+
+
+    # Visit a parse tree produced by MiniGoParser#nullparamlist.
+    def visitNullparamlist(self, ctx:MiniGoParser.NullparamlistContext):
+        # nullparamlist: paramlist | 
+        return self.visit(ctx.paramlist()) if ctx.paramlist() else []
+
+
+    # Visit a parse tree produced by MiniGoParser#paramlist.
+    def visitParamlist(self, ctx:MiniGoParser.ParamlistContext):
+        # paramlist: sharedparamlist CM paramlist | sharedparamlist
+        if ctx.CM():
+            sharedparam = self.visit(ctx.sharedparamlist())
+            paramlist = self.visit(ctx.paramlist())
+            return sharedparam + paramlist
+        return self.visit(ctx.sharedparamlist())
+
+
+    # Visit a parse tree produced by MiniGoParser#sharedparamlist.
+    def visitSharedparamlist(self, ctx:MiniGoParser.SharedparamlistContext):
+        # sharedparamlist: params availtyp
+        params = self.visit(ctx.params())
+        paramtyp = self.visit(ctx.availtyp())
+        return [ParamDecl(name, paramtyp) for name in params]
+
+
+    # Visit a parse tree produced by MiniGoParser#params.
+    def visitParams(self, ctx:MiniGoParser.ParamsContext):
+        # params: ID CM params | ID
+        if ctx.CM():
+            param = ctx.ID().getText()
+            params = self.visit(ctx.params())
+            return [param] + params
+        return [ctx.ID().getText()]
+    
 
     # Visit a parse tree produced by MiniGoParser#methoddecl.
     def visitMethoddecl(self, ctx:MiniGoParser.MethoddeclContext):
-        return self.visitChildren(ctx)
+        # methoddecl: FUNC receiver ID paramlistdecl returntyp? block
+        # MethodDecl(receiver:str, recType:Type, fun:FuncDecl)
+        recname, rectype = self.visit(ctx.receiver())
+        name = ctx.ID().getText()
+        params = self.visit(ctx.paramlistdecl())
+        rettyp = self.visit(ctx.returntyp()) if ctx.returntyp() else VoidType()
+        body = self.visit(ctx.block())
+        funcdecl = FuncDecl(name, params, rettyp, body)
+        return MethodDecl(recname, rectype, funcdecl)
 
 
     # Visit a parse tree produced by MiniGoParser#receiver.
     def visitReceiver(self, ctx:MiniGoParser.ReceiverContext):
-        return self.visitChildren(ctx)
+        # receiver: LP ID ID RP
+        recname = ctx.ID(0).getText()
+        rectype = Id(ctx.ID(1).getText())
+        return recname, rectype
 
 
     # Visit a parse tree produced by MiniGoParser#block.
     def visitBlock(self, ctx:MiniGoParser.BlockContext):
-        return self.visitChildren(ctx)
+        # block: LB nullstmtlist RB
+        # Block(member:List[BlockMember])
+        return Block(self.visit(ctx.nullstmtlist()))
 
 
     # Visit a parse tree produced by MiniGoParser#nullstmtlist.
     def visitNullstmtlist(self, ctx:MiniGoParser.NullstmtlistContext):
-        return self.visitChildren(ctx)
+        # nullstmtlist: stmtlist | 
+        return self.visit(ctx.stmtlist()) if ctx.stmtlist() else []
 
 
     # Visit a parse tree produced by MiniGoParser#stmtlist.
@@ -579,13 +638,13 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#stmt.
     def visitStmt(self, ctx:MiniGoParser.StmtContext):
-        # stmt: semistmt stmtterm | optsemistmt stmtterm | nosemistmt stmtterm | exstmt stmtterm
+        # stmt: semistmt stmtterm | optsemistmt stmtterm | nosemistmt stmtterm | exstmt stmtterm | returnstmt SC
         return self.visit(ctx.getChild(0))
     
     
     # Visit a parse tree produced by MiniGoParser#semistmt.
     def visitSemistmt(self, ctx:MiniGoParser.SemistmtContext):
-        # semistmt: vardecl | constdecl | asgnstmt | breakstmt | continuestmt | callstmt | returnstmt
+        #semistmt: vardecl | constdecl | asgnstmt | breakstmt | continuestmt | callstmt
         return self.visit(ctx.getChild(0))
 
 
@@ -598,7 +657,7 @@ class ASTGeneration(MiniGoVisitor):
     # Visit a parse tree produced by MiniGoParser#nosemistmt.
     def visitNosemistmt(self, ctx:MiniGoParser.NosemistmtContext):
         # nosemistmt: ifstmt | forstmt | funcdecl | methoddecl
-        self.visit(ctx.getChild(0))
+        return self.visit(ctx.getChild(0))
 
 
     # Visit a parse tree produced by MiniGoParser#asgnstmt.
@@ -750,7 +809,6 @@ class ASTGeneration(MiniGoVisitor):
     # Visit a parse tree produced by MiniGoParser#returnstmt.
     def visitReturnstmt(self, ctx:MiniGoParser.ReturnstmtContext):
         # returnstmt: RETURN expr?
-        # Return(expr:Expr)
         expr = self.visit(ctx.expr()) if ctx.expr() else None
         return Return(expr)
 
