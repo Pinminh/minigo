@@ -580,12 +580,30 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#asgnstmt.
     def visitAsgnstmt(self, ctx:MiniGoParser.AsgnstmtContext):
-        return self.visitChildren(ctx)
+        # asgnstmt: varexpr (ASGN | ADDEQ | SUBEQ | MULEQ | DIVEQ | MODEQ) expr
+        lhs = self.visit(ctx.varexpr())
+        rhs = self.visit(ctx.expr())
+        eop = ctx.getChild(1).getText()[0]
+        if eop != ":":
+            rhs = BinaryOp(eop, lhs, rhs)
+        return Assign(lhs, rhs)
 
 
     # Visit a parse tree produced by MiniGoParser#varexpr.
-    def visitVarexpr(self, ctx:MiniGoParser.VarexprContext):
-        return self.visitChildren(ctx)
+    def visitVarexpr(self, ctx:MiniGoParser.VarexprContext, arrcell=[]):
+        # varexpr: varexpr bracketop | varexpr structop | ID
+        if ctx.bracketop():
+            cell = [self.visit(ctx.bracketop())] + arrcell
+            return self.visitVarexpr(ctx.varexpr(), cell)
+        if ctx.structop():
+            receiver = self.visit(ctx.varexpr())
+            field = self.visit(ctx.structop())
+            lexpr = FieldAccess(receiver, field)
+        if ctx.ID():
+            lexpr = Id(ctx.ID().getText())
+        if arrcell:
+            return ArrayCell(lexpr, arrcell)
+        return lexpr
 
 
     # Visit a parse tree produced by MiniGoParser#vararr.
@@ -605,11 +623,6 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#fieldacclist.
     def visitFieldacclist(self, ctx:MiniGoParser.FieldacclistContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#asgnop.
-    def visitAsgnop(self, ctx:MiniGoParser.AsgnopContext):
         return self.visitChildren(ctx)
 
 

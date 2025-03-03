@@ -341,16 +341,14 @@ nosemistmt: ifstmt | forstmt | funcdecl | methoddecl;
 
 // asignment statement
 
-asgnstmt: varexpr asgnop expr;
+asgnstmt: varexpr (ASGN | ADDEQ | SUBEQ | MULEQ | DIVEQ | MODEQ) expr;
 varexpr: varexpr bracketop | varexpr structop | ID;
 
-vararr: ID arridxlist;
-arridxlist: bracketop arridxlist | bracketop;
+// vararr: ID arridxlist;
+// arridxlist: bracketop arridxlist | bracketop;
 
-varstruct: ID fieldacclist;
-fieldacclist: structop fieldacclist | structop;
-
-asgnop: ASGN | ADDEQ | SUBEQ | MULEQ | DIVEQ | MODEQ;
+// varstruct: ID fieldacclist;
+// fieldacclist: structop fieldacclist | structop;
 
 // if statement
 
