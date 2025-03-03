@@ -72,8 +72,16 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#returntyp.
     def visitReturntyp(self, ctx:MiniGoParser.ReturntypContext):
-        # returntyp: bltintyp
-        return self.visit(ctx.bltintyp())
+        # returntyp: availtyp
+        return self.visit(ctx.availtyp())
+    
+    
+    # Visit a parse tree produced by MiniGoParser#availtyp.
+    def visitAvailtyp(self, ctx:MiniGoParser.AvailtypContext):
+        # availtyp: bltintyp | ID
+        if ctx.bltintyp():
+            return self.visit(ctx.bltintyp())
+        return Id(ctx.ID().getText())
 
 
     # Visit a parse tree produced by MiniGoParser#primlit.
@@ -111,37 +119,40 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#paramlistdecl.
     def visitParamlistdecl(self, ctx:MiniGoParser.ParamlistdeclContext):
-        return self.visitChildren(ctx)
+        # paramlistdecl: LP nullparamlist RP
+        return self.visit(ctx.nullparamlist())
 
 
     # Visit a parse tree produced by MiniGoParser#nullparamlist.
     def visitNullparamlist(self, ctx:MiniGoParser.NullparamlistContext):
-        return self.visitChildren(ctx)
+        # nullparamlist: paramlist | 
+        return self.visit(ctx.paramlist()) if ctx.paramlist() else []
 
+
+    # Visit a parse tree produced by MiniGoParser#paramlist.
+    def visitParamlist(self, ctx:MiniGoParser.ParamlistContext):
+        # paramlist: sharedtyplist CM paramlist | sharedtyplist
+        if ctx.paramlist():
+            sharedtyp = self.visit(ctx.sharedtyplist())
+            typlist = self.visit(ctx.paramlist())
+            return sharedtyp + typlist
+        return self.visit(ctx.sharedtyplist())
+    
 
     # Visit a parse tree produced by MiniGoParser#sharedtyplist.
     def visitSharedtyplist(self, ctx:MiniGoParser.SharedtyplistContext):
-        return self.visitChildren(ctx)
+        # sharedtyplist: params availtyp
+        shared_num = self.visit(ctx.params())
+        paramtyp = self.visit(ctx.availtyp())
+        return shared_num * [paramtyp]
 
 
     # Visit a parse tree produced by MiniGoParser#params.
     def visitParams(self, ctx:MiniGoParser.ParamsContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#pairtyplist.
-    def visitPairtyplist(self, ctx:MiniGoParser.PairtyplistContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#parampairs.
-    def visitParampairs(self, ctx:MiniGoParser.ParampairsContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#parampair.
-    def visitParampair(self, ctx:MiniGoParser.ParampairContext):
-        return self.visitChildren(ctx)
+        # params: ID CM params | ID
+        if ctx.CM():
+            return 1 + self.visit(ctx.params())
+        return 1
 
 
     # Visit a parse tree produced by MiniGoParser#arglistdecl.
@@ -291,17 +302,29 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#interfacedecl.
     def visitInterfacedecl(self, ctx:MiniGoParser.InterfacedeclContext):
-        return self.visitChildren(ctx)
+        # interfacedecl: TYPE ID INTERFACE LB methodlist RB stmtterm
+        name = ctx.ID().getText()
+        methods = self.visit(ctx.methodlist())
+        return InterfaceType(name, methods)
 
 
     # Visit a parse tree produced by MiniGoParser#methodlist.
     def visitMethodlist(self, ctx:MiniGoParser.MethodlistContext):
-        return self.visitChildren(ctx)
+        # methodlist: method methodlist | method
+        if ctx.methodlist():
+            method = self.visit(ctx.method())
+            methodlist = self.visit(ctx.methodlist())
+            return [method] + methodlist
+        return [self.visit(ctx.method())]
 
 
     # Visit a parse tree produced by MiniGoParser#method.
     def visitMethod(self, ctx:MiniGoParser.MethodContext):
-        return self.visitChildren(ctx)
+        # method: ID paramlistdecl returntyp? stmtterm
+        name = ctx.ID().getText()
+        params = self.visit(ctx.paramlistdecl())
+        rettyp = self.visit(ctx.returntyp()) if ctx.returntyp() else VoidType()
+        return Prototype(name, params, rettyp)
 
 
     # Visit a parse tree produced by MiniGoParser#vardecl.

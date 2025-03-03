@@ -202,8 +202,9 @@ dimlist: dim dimlist | dim;
 dim: LS (INTLIT | ID) RS;   // missing ID constant check
 
 bltintyp: primtyp | arrtyp;
+availtyp: bltintyp | ID;
 
-returntyp: bltintyp;    // return type can be interface?
+returntyp: availtyp;    // return type can be interface?
 
 // literal classification
 
@@ -218,14 +219,11 @@ stmtterm: SC?;   // temporary terminator
 // parameter list declaration
 
 paramlistdecl: LP nullparamlist RP;
-nullparamlist: sharedtyplist | pairtyplist | ;
+nullparamlist: paramlist | ;
+paramlist: sharedtyplist CM paramlist | sharedtyplist;
 
-sharedtyplist: params bltintyp; // parameter type includes interface?
+sharedtyplist: params availtyp; // parameter type includes interface?
 params: ID CM params | ID;
-
-pairtyplist: parampairs CM pairtyplist | parampairs;
-parampairs: parampair CM parampairs | parampair;
-parampair: ID bltintyp;
 
 // argument list declaration
 
