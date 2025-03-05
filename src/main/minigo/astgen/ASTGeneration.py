@@ -86,14 +86,16 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#primlit.
     def visitPrimlit(self, ctx:MiniGoParser.PrimlitContext):
-        # primlit: INTLIT | FLOATLIT | BOOLLIT | STRLIT
+        # primlit: INTLIT | FLOATLIT | BOOLLIT | STRLIT | NIL
         if ctx.INTLIT():
             return IntLiteral(int(ctx.INTLIT().getText()))
         if ctx.FLOATLIT():
             return FloatLiteral(float(ctx.FLOATLIT().getText()))
         if ctx.BOOLLIT():
             return BooleanLiteral(ctx.BOOLLIT().getText() == 'true')
-        return StringLiteral(ctx.STRLIT().getText()[1:-1])
+        if ctx.STRLIT():
+            return StringLiteral(ctx.STRLIT().getText()[1:-1])
+        return NilLiteral()
 
 
     # Visit a parse tree produced by MiniGoParser#complit.
@@ -110,11 +112,6 @@ class ASTGeneration(MiniGoVisitor):
         if ctx.primlit():
             return self.visit(ctx.primlit())
         return self.visit(ctx.complit())
-
-
-    # Visit a parse tree produced by MiniGoParser#stmtterm.
-    def visitStmtterm(self, ctx:MiniGoParser.StmttermContext):
-        return self.visitChildren(ctx)
 
 
     # Visit a parse tree produced by MiniGoParser#paramtyplistdecl.
@@ -177,11 +174,6 @@ class ASTGeneration(MiniGoVisitor):
         return [self.visit(ctx.expr())]
 
 
-    # Visit a parse tree produced by MiniGoParser#arrdecl.
-    def visitArrdecl(self, ctx:MiniGoParser.ArrdeclContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MiniGoParser#arrlit.
     def visitArrlit(self, ctx:MiniGoParser.ArrlitContext):
         # arrlit: arrtyp elemlistdecl
@@ -227,11 +219,8 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#elemlit.
     def visitElemlit(self, ctx:MiniGoParser.ElemlitContext):
-        # elemlit: primlit | structlit | ID
-        # Id(name:str)
-        if ctx.ID():
-            return Id(ctx.ID().getText())
-        return self.visit(ctx.getChild(0))
+        # elemlit: expr
+        return self.visit(ctx.expr())
 
 
     # Visit a parse tree produced by MiniGoParser#structdecl.
@@ -631,11 +620,6 @@ class ASTGeneration(MiniGoVisitor):
         return Id(ctx.ID().getText())
 
 
-    # Visit a parse tree produced by MiniGoParser#evalexpr.
-    def visitEvalexpr(self, ctx:MiniGoParser.EvalexprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MiniGoParser#stmt.
     def visitStmt(self, ctx:MiniGoParser.StmtContext):
         # stmt: semistmt stmtterm | optsemistmt stmtterm | nosemistmt stmtterm | exstmt stmtterm | returnstmt SC
@@ -740,47 +724,71 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#forstmt.
     def visitForstmt(self, ctx:MiniGoParser.ForstmtContext):
-        return self.visitChildren(ctx)
+        # forstmt: basicfor | standfor | rangefor
+        return self.visit(ctx.getChild(0))
 
 
     # Visit a parse tree produced by MiniGoParser#basicfor.
     def visitBasicfor(self, ctx:MiniGoParser.BasicforContext):
-        return self.visitChildren(ctx)
+        # basicfor: FOR expr block
+        cond = self.visit(ctx.expr())
+        loop = self.visit(ctx.block())
+        return ForBasic(cond, loop)
 
 
     # Visit a parse tree produced by MiniGoParser#standfor.
     def visitStandfor(self, ctx:MiniGoParser.StandforContext):
-        return self.visitChildren(ctx)
+        # standfor: FOR forinit SC forcond SC forupdt block
+        init = self.visit(ctx.forinit())
+        cond = self.visit(ctx.forcond())
+        upda = self.visit(ctx.forupdt())
+        loop = self.visit(ctx.block())
+        return ForStep(init, cond, upda, loop)
 
 
     # Visit a parse tree produced by MiniGoParser#rangefor.
     def visitRangefor(self, ctx:MiniGoParser.RangeforContext):
-        return self.visitChildren(ctx)
+        # rangefor: FOR ID CM ID ASGN RANGE expr block
+        idx = Id(ctx.ID(0).getText())
+        val = Id(ctx.ID(1).getText())
+        arr = self.visit(ctx.expr())
+        loop = self.visit(ctx.block())
+        return ForEach(idx, val, arr, loop)
 
 
     # Visit a parse tree produced by MiniGoParser#forinit.
     def visitForinit(self, ctx:MiniGoParser.ForinitContext):
-        return self.visitChildren(ctx)
+        # forinit: forasgn | forvardecl
+        return self.visit(ctx.getChild(0))
 
 
     # Visit a parse tree produced by MiniGoParser#forasgn.
     def visitForasgn(self, ctx:MiniGoParser.ForasgnContext):
-        return self.visitChildren(ctx)
+        # forasgn: ID ASGN expr
+        var = Id(ctx.ID().getText())
+        expr = self.visit(ctx.expr())
+        return Assign(var, expr)
 
 
     # Visit a parse tree produced by MiniGoParser#forvardecl.
     def visitForvardecl(self, ctx:MiniGoParser.ForvardeclContext):
-        return self.visitChildren(ctx)
+        # forvardecl: VAR ID vartyp? INIT expr
+        varname = ctx.ID().getText()
+        vartyp = self.visit(ctx.vartyp()) if ctx.vartyp() else None
+        expr = self.visit(ctx.expr())
+        return VarDecl(varname, vartyp, expr)
 
 
     # Visit a parse tree produced by MiniGoParser#forcond.
     def visitForcond(self, ctx:MiniGoParser.ForcondContext):
-        return self.visitChildren(ctx)
+        # forcond: expr
+        return self.visit(ctx.expr())
 
 
     # Visit a parse tree produced by MiniGoParser#forupdt.
     def visitForupdt(self, ctx:MiniGoParser.ForupdtContext):
-        return self.visitChildren(ctx)
+        # forupdt: asgnstmt
+        return self.visit(ctx.asgnstmt())
 
 
     # Visit a parse tree produced by MiniGoParser#breakstmt.

@@ -208,7 +208,7 @@ returntyp: availtyp;    // return type can be interface?
 
 // literal classification
 
-primlit: INTLIT | FLOATLIT | BOOLLIT | STRLIT;
+primlit: INTLIT | FLOATLIT | BOOLLIT | STRLIT | NIL;
 complit: arrlit | structlit;
 bltinlit: primlit | complit;
 
@@ -241,7 +241,7 @@ arglist: expr CM arglist | expr;
 
 // array declaration
 
-arrdecl: VAR ID arrtyp;
+// arrdecl: VAR ID arrtyp;
 
 // array literal (array initialization)
 
@@ -253,7 +253,7 @@ elemlist: recurlist | litlist;
 recurlist: elemlistdecl CM recurlist | elemlistdecl;
 litlist: elemlit CM litlist | elemlit;
 
-elemlit: primlit | structlit | ID;
+elemlit: expr;
 
 // struct declaration
 
@@ -334,7 +334,7 @@ structop: DOT ID;
 
 operand: bltinlit | ID;
 
-evalexpr: 'evalexpr';   // incomplete, and is it necessary?
+// evalexpr: 'evalexpr';   // incomplete, and is it necessary?
 
 // statement declaration
 
@@ -377,7 +377,7 @@ rangefor: FOR ID CM ID ASGN RANGE expr block;
 
 forinit: forasgn | forvardecl;
 forasgn: ID ASGN expr;
-forvardecl: VAR ID INIT expr;
+forvardecl: VAR ID vartyp? INIT expr;
 
 forcond: expr;
 forupdt: asgnstmt;
