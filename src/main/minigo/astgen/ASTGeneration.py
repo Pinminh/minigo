@@ -1,12 +1,9 @@
-from pathlib import Path
+# 2212059 - Nguyen Hong Minh
+
 from MiniGoVisitor import MiniGoVisitor
 from MiniGoParser import MiniGoParser
 from AST import *
 
-def write_test_output(data):
-    path = Path("C:/Users/ASUS/Desktop/test.txt").absolute()
-    with open(path, "w+") as file:
-        file.write(data)
 
 class ASTGeneration(MiniGoVisitor):  
 
