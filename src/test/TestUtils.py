@@ -120,13 +120,14 @@ class TestChecker:
             inputfile = TestUtil.makeSource(str(input),num)
             asttree = input
         
-        
+        print(f"Test {num}: {asttree}")
         checker = StaticChecker(asttree)
         try:
             res = checker.check()
             #dest.write(str(list(res)))
         except StaticError as e:
             dest.write(str(e)+'\n')
+            print(f">> Exception: {str(e)}\n")
         finally:
             dest.close()
         dest = open("./test/solutions/" + str(num) + ".txt","r")
