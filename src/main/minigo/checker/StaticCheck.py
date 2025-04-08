@@ -90,8 +90,33 @@ class StaticChecker(BaseVisitor, Utils):
     
     
     def visitFuncDecl(self, ast, env):
+        # name: str
+        # params: List[ParamDecl]
+        # retType: Type # VoidType if there is no return type
+        # body: Block
+        if ast.name in (symbol.name for symbol in env[0]):
+            raise Redeclared(Function(), ast.name)
+        params = reduce(
+            lambda acc, param: [self.visit(param, env)] + acc,
+            ast.params,
+            [],
+        )
+        # Start of function scope
+        env[0].append(Symbol(
+            ast.name,
+            MType([param.symtype.type for param in params], ast.retType)
+        ))
+        # Start of parameter scope
+        env = [params] + env
+        # Start of body scope
+        env = [[]] + env
+        self.visit(ast.body, env)
         return None
     
+    
+    def visitParamDecl(self, ast, env):
+        return Symbol(ast.parName, VType(ast.parType))
+
     
     def visitMethodDecl(self, ast, env):
         return None
@@ -134,6 +159,9 @@ class StaticChecker(BaseVisitor, Utils):
     
     
     def visitBlock(self, ast, env):
+        # member:List[BlockMember]
+        for mem in ast.member:
+            self.visit(mem, env)
         return None
     
  
