@@ -19,17 +19,17 @@ class ParserSuite(unittest.TestCase):
     def test_wrong_miss_close(self):
         """Miss ) void main( {}"""
         input = """func main({};"""
-        expect = "Error on line 1 col 11: {"
+        expect = "Error on line 1 col 10: {"
         self.assertTrue(TestParser.checkParser(input,expect,203))
     
     def test_wrong_variable(self):
         input = """var int;"""
-        expect = "Error on line 1 col 5: int"
+        expect = "Error on line 1 col 4: int"
         self.assertTrue(TestParser.checkParser(input,expect,204))
     
     def test_wrong_index(self):
         input = """var i ;"""
-        expect = "Error on line 1 col 7: ;"
+        expect = "Error on line 1 col 6: ;"
         self.assertTrue(TestParser.checkParser(input,expect,205))
     
     def test_var_declaration_1(self):

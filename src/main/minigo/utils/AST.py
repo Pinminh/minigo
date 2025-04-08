@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod, ABCMeta
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 from Visitor import Visitor
 
 
@@ -410,7 +410,7 @@ class BooleanLiteral(PrimLit):
     def accept(self, v, param):
         return v.visitBooleanLiteral(self, param)
 
-NestedList = PrimLit | list['NestedList']
+NestedList = Union[PrimLit, List['NestedList']]
 def nested2Str(dat: NestedList):
     if isinstance(dat,list):
         return '[' + ','.join(nested2Str(i) for i in dat) + ']'

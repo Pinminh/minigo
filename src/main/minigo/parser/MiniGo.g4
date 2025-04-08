@@ -248,18 +248,14 @@ arglist: expr CM arglist | expr;
 arrlit: arrtyp elemlistdecl;
 
 elemlistdecl: LB elemlist RB;
-elemlist: recurlist | litlist;
-
-recurlist: elemlistdecl CM recurlist | elemlistdecl;
-litlist: elemlit CM litlist | elemlit;
-
-elemlit: expr;
+elemlist: elemlit CM elemlist | elemlit;
+elemlit: expr | elemlistdecl;
 
 // struct declaration
 
 structdecl: TYPE ID STRUCT LB fieldlist RB stmtterm;
 fieldlist: field fieldlist | field;
-field: ID bltintyp stmtterm;
+field: ID availtyp stmtterm;
 
 // struct literal (struct initialization)
 

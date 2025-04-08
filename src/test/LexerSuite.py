@@ -343,12 +343,12 @@ class LexerSuite(unittest.TestCase):
 
     def test_stringlit_7(self):
         input = r'''" something just like this \\t huh!!'''
-        expect = r'''ErrorToken "'''
+        expect = r'''Unclosed string: " something just like this \\t huh!!'''
         self.assertTrue(TestLexer.checkLexeme(input,expect,167))
 
     def test_stringlit_8(self):
         input = r'''"""im not completed!""'''
-        expect = r'''"","im not completed!",ErrorToken "'''
+        expect = r'''"","im not completed!",Unclosed string: "'''
         self.assertTrue(TestLexer.checkLexeme(input,expect,168))
 
     def test_stringlit_9(self):
@@ -357,13 +357,13 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.checkLexeme(input,expect,169))
 
     def test_stringlit_10(self):
-        input = '"Wrong escape: \\x";'
-        expect = r'''ErrorToken "'''
+        input = r'"Wrong escape: \x";'
+        expect = r'''Illegal escape in string: "Wrong escape: \x'''
         self.assertTrue(TestLexer.checkLexeme(input,expect,170))
 
     def test_stringlit_11(self):
-        input = '"Escapes: \\b \\t \\g \\"'
-        expect = r'''ErrorToken "'''
+        input = r'"Escapes: \b \t \g \"'
+        expect = r'''Illegal escape in string: "Escapes: \b'''
         self.assertTrue(TestLexer.checkLexeme(input,expect,171))
 
     def test_stringlit_12(self):
@@ -377,8 +377,8 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.checkLexeme(input,expect,173))
 
     def test_stringlit_14(self):
-        input = '"Wrong Escape: \\"'
-        expect = 'ErrorToken "'
+        input = r'"Wrong Escape: \"'
+        expect = r'''Unclosed string: "Wrong Escape: \"'''
         self.assertTrue(TestLexer.checkLexeme(input,expect,174))
 
     def test_stringlit_15(self):
