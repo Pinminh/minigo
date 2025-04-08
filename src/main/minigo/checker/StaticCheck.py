@@ -17,14 +17,23 @@ class MType:
         return "MType([" + ",".join(str(x) for x in self.partype) + "]," + str(self.rettype) + ")"
 
 
+class VType:
+    def __init__(self, typ, const=False):
+        self.type = typ
+        self.const = const
+    
+    def __str__(self):
+        return f"VType({self.name}, {self.type}, {'const' if self.const else 'var'})"
+
+
 class Symbol:
-    def __init__(self, name, mtype, value = None):
+    def __init__(self, name, typ, value = None):
         self.name = name
-        self.mtype = mtype
+        self.symtype = typ
         self.value = value
 
     def __str__(self):
-        return "Symbol(" + str(self.name) + "," + str(self.mtype) + ("" if self.value is None else "," + str(self.value)) + ")"
+        return "Symbol(" + str(self.name) + "," + str(self.symtype) + ("" if self.value is None else "," + str(self.value)) + ")"
 
 
 class StaticChecker(BaseVisitor, Utils):
@@ -64,14 +73,19 @@ class StaticChecker(BaseVisitor, Utils):
         # varName : str
         # varType : Type # None if there is no type
         # varInit : Expr # None if there is no initialization
-        if ast.varName in (symbol.name for scope in env for symbol in scope):
+        if ast.varName in (symbol.name for symbol in env[0]):
             raise Redeclared(Variable(), ast.varName)
-        env[0].append(Symbol(ast.varName, ast., ast.varType))
+        env[0].append(Symbol(ast.varName, VType(ast.varType)))
         return None
 
     
     def visitConstDecl(self, ast, env):
-        
+        # conName : str
+        # conType : Type # None if there is no type 
+        # iniExpr : Expr
+        if ast.conName in (symbol.name for symbol in env[0]):
+            raise Redeclared(Constant(), ast.conName)
+        env[0].append(Symbol(ast.conName, VType(ast.conType, const=True)))
         return None
     
     
