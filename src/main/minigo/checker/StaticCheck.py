@@ -3,9 +3,20 @@
 """
 from AST import * 
 from Visitor import *
-from Utils import Utils
+# from Utils import Utils
 from StaticError import *
 from functools import reduce
+
+
+class Utils:
+    @staticmethod
+    def find_duplicate(get_info, lst):
+        seen = set()
+        for item in lst:
+            if get_info(item) in seen:
+                return item
+            seen.add(get_info(item))
+        return None
 
 
 class MType:
@@ -23,7 +34,16 @@ class VType:
         self.const = const
     
     def __str__(self):
-        return f"VType({self.name}, {self.type}, {'const' if self.const else 'var'})"
+        return f"VType({self.type}, {'const' if self.const else 'var'})"
+
+
+class SType:
+    def __init__(self, elements, methods):
+        self.elements = elements
+        self.methods = methods
+    
+    def __str__(self):
+        return f"SType({','.join(self.elements)},{','.join(self.methods)})"
 
 
 class Symbol:
@@ -33,7 +53,7 @@ class Symbol:
         self.value = value
 
     def __str__(self):
-        return "Symbol(" + str(self.name) + "," + str(self.symtype) + ("" if self.value is None else "," + str(self.value)) + ")"
+        return "Symbol(" + str(self.name) + "," + str(self.symtype) + self.value + ")"
 
 
 class StaticChecker(BaseVisitor, Utils):
@@ -151,6 +171,16 @@ class StaticChecker(BaseVisitor, Utils):
     
     
     def visitStructType(self, ast, env):
+        # name: str
+        # elements:List[Tuple[str,Type]]
+        # methods:List[MethodDecl]
+        if ast.name in (symbol.name for symbol in env[0]):
+            raise Redeclared(Type(), ast.name)
+        elemsyms = list(map(lambda tup: Symbol(tup[0], VType(tup[1])), ast.elements))
+        duplicated = Utils.find_duplicate(lambda sym: sym.name, elemsyms)
+        if duplicated:
+            raise Redeclared(Field(), duplicated.name)
+        env[0].append(Symbol(ast.name, SType(elemsyms, [])))
         return None
     
 
@@ -291,3 +321,130 @@ class StaticChecker(BaseVisitor, Utils):
     #     if res is None:
     #         raise Undeclared(Identifier(), ast.name)
     #     return res.mtype
+
+
+class StaticCollector(BaseVisitor, Utils):
+    
+    def __init__(self, ast):
+        self.ast = ast
+        self.global_env = [
+            Symbol("getInt", MType([], IntType())),
+            Symbol("putInt",MType([IntType()], VoidType())),
+            Symbol("putIntLn",MType([IntType()], VoidType())),
+            Symbol("getFloat", MType([], FloatType())),
+            Symbol("putFloat",MType([FloatType()], VoidType())),
+            Symbol("putFloatLn",MType([FloatType()], VoidType())),
+            Symbol("getBool", MType([], BoolType())),
+            Symbol("putBool",MType([BoolType()], VoidType())),
+            Symbol("putBoolLn",MType([BoolType()], VoidType())),
+            Symbol("getString", MType([], StringType())),
+            Symbol("putString",MType([StringType()], VoidType())),
+            Symbol("putStringLn",MType([StringType()], VoidType())),
+            Symbol("putLn", MType([], VoidType())),
+        ]
+ 
+    
+    def collect(self):
+        return self.visit(self.ast, self.global_env)
+
+    
+    def visitProgram(self, ast, env):
+        # decl : List[Decl]
+        env = [env]
+        for decl in ast.decl:
+            self.visit(decl, env)
+        return None
+    
+    
+    def visitVarDecl(self, ast, env):
+        # varName : str
+        # varType : Type # None if there is no type
+        # varInit : Expr # None if there is no initialization
+        if ast.varName in (symbol.name for symbol in env[0]):
+            raise Redeclared(Variable(), ast.varName)
+        env[0].append(Symbol(ast.varName, typ=VType(typ=None)))
+        return None
+
+    
+    def visitConstDecl(self, ast, env):
+        # conName : str
+        # conType : Type # None if there is no type 
+        # iniExpr : Expr
+        if ast.conName in (symbol.name for symbol in env[0]):
+            raise Redeclared(Constant(), ast.conName)
+        env[0].append(Symbol(ast.conName, VType(typ=None, const=True)))
+        return None
+    
+    
+    def visitFuncDecl(self, ast, env):
+        # name: str
+        # params: List[ParamDecl]
+        # retType: Type # VoidType if there is no return type
+        # body: Block
+        if ast.name in (symbol.name for symbol in env[0]):
+            raise Redeclared(Function(), ast.name)
+        params = reduce(
+            lambda acc, param: [self.visit(param, env)] + acc,
+            ast.params,
+            [],
+        )
+        # Start of function scope
+        env[0].append(Symbol(
+            ast.name,
+            MType([param.symtype.type for param in params], ast.retType)
+        ))
+        return None
+    
+    
+    def visitParamDecl(self, ast, env):
+        return Symbol(ast.parName, VType(ast.parType))
+
+    
+    def visitMethodDecl(self, ast, env):
+        return None
+    
+
+    def visitPrototype(self, ast, env):
+        return None
+    
+    
+    def visitIntType(self, ast, env):
+        return None
+    
+    
+    def visitFloatType(self, ast, env):
+        return None
+    
+    
+    def visitBoolType(self, ast, env):
+        return None
+    
+    
+    def visitStringType(self, ast, env):
+        return None
+    
+    
+    def visitVoidType(self, ast, env):
+        return None
+    
+    
+    def visitArrayType(self, ast, env):
+        return None
+    
+    
+    def visitStructType(self, ast, env):
+        # name: str
+        # elements:List[Tuple[str,Type]]
+        # methods:List[MethodDecl]
+        if ast.name in (symbol.name for symbol in env[0]):
+            raise Redeclared(Type(), ast.name)
+        elemsyms = list(map(lambda tup: Symbol(tup[0], VType(tup[1])), ast.elements))
+        duplicated = Utils.find_duplicate(lambda sym: sym.name, elemsyms)
+        if duplicated:
+            raise Redeclared(Field(), duplicated.name)
+        env[0].append(Symbol(ast.name, SType(elemsyms, methods=[])))
+        return None
+    
+
+    def visitInterfaceType(self, ast, env):
+        return None
