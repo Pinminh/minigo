@@ -46,6 +46,14 @@ class SType:
         return f"SType({','.join(self.elements)},{','.join(self.methods)})"
 
 
+class IType:
+    def __init__(self, prototypes):
+        self.prototypes = prototypes
+    
+    def __str__(self):
+        return f"IType({','.join(self.prototypes)})"
+
+
 class Symbol:
     def __init__(self, name, typ, value = None):
         self.name = name
@@ -58,26 +66,15 @@ class Symbol:
 
 class StaticChecker(BaseVisitor, Utils):
     
-    def __init__(self, ast):
+    def __init__(self, ast):        
         self.ast = ast
-        self.global_env = [
-            Symbol("getInt", MType([], IntType())),
-            Symbol("putInt",MType([IntType()], VoidType())),
-            Symbol("putIntLn",MType([IntType()], VoidType())),
-            Symbol("getFloat", MType([], FloatType())),
-            Symbol("putFloat",MType([FloatType()], VoidType())),
-            Symbol("putFloatLn",MType([FloatType()], VoidType())),
-            Symbol("getBool", MType([], BoolType())),
-            Symbol("putBool",MType([BoolType()], VoidType())),
-            Symbol("putBoolLn",MType([BoolType()], VoidType())),
-            Symbol("getString", MType([], StringType())),
-            Symbol("putString",MType([StringType()], VoidType())),
-            Symbol("putStringLn",MType([StringType()], VoidType())),
-            Symbol("putLn", MType([], VoidType())),
-        ]
+        self.global_env = []
  
     
     def check(self):
+        collector = StaticCollector(self.ast)
+        collector.collect()
+        self.global_env = collector.global_env
         return self.visit(self.ast, self.global_env)
 
     
@@ -93,6 +90,7 @@ class StaticChecker(BaseVisitor, Utils):
         # varName : str
         # varType : Type # None if there is no type
         # varInit : Expr # None if there is no initialization
+        if len(env) <= 1: return None
         if ast.varName in (symbol.name for symbol in env[0]):
             raise Redeclared(Variable(), ast.varName)
         env[0].append(Symbol(ast.varName, VType(ast.varType)))
@@ -103,6 +101,7 @@ class StaticChecker(BaseVisitor, Utils):
         # conName : str
         # conType : Type # None if there is no type 
         # iniExpr : Expr
+        if len(env) <= 1: return None
         if ast.conName in (symbol.name for symbol in env[0]):
             raise Redeclared(Constant(), ast.conName)
         env[0].append(Symbol(ast.conName, VType(ast.conType, const=True)))
@@ -121,11 +120,6 @@ class StaticChecker(BaseVisitor, Utils):
             ast.params,
             [],
         )
-        # Start of function scope
-        env[0].append(Symbol(
-            ast.name,
-            MType([param.symtype.type for param in params], ast.retType)
-        ))
         # Start of parameter scope
         env = [params] + env
         # Start of body scope
@@ -174,13 +168,6 @@ class StaticChecker(BaseVisitor, Utils):
         # name: str
         # elements:List[Tuple[str,Type]]
         # methods:List[MethodDecl]
-        if ast.name in (symbol.name for symbol in env[0]):
-            raise Redeclared(Type(), ast.name)
-        elemsyms = list(map(lambda tup: Symbol(tup[0], VType(tup[1])), ast.elements))
-        duplicated = Utils.find_duplicate(lambda sym: sym.name, elemsyms)
-        if duplicated:
-            raise Redeclared(Field(), duplicated.name)
-        env[0].append(Symbol(ast.name, SType(elemsyms, [])))
         return None
     
 
@@ -405,7 +392,10 @@ class StaticCollector(BaseVisitor, Utils):
     
 
     def visitPrototype(self, ast, env):
-        return None
+        # name: str
+        # params:List[Type]
+        # retType: Type # VoidType if there is no return type
+        return Symbol(ast.name, MType(ast.params, ast.retType))
     
     
     def visitIntType(self, ast, env):
@@ -447,4 +437,13 @@ class StaticCollector(BaseVisitor, Utils):
     
 
     def visitInterfaceType(self, ast, env):
+        # name: str
+        # methods:List[Prototype]
+        for ast.name in (symbol.name for symbol in env[0]):
+            raise Redeclared(Type(), ast.name)
+        protos = list(map(lambda proto: self.visit(proto, env), ast.methods))
+        duplicated = Utils.find_duplicate(lambda proto: proto.name, protos)
+        if duplicated:
+            raise Redeclared(Prototype(), duplicated.name)
+        env[0].append(Symbol(ast.name, IType(protos)))
         return None
