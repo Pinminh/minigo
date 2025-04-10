@@ -474,7 +474,19 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # conName : str
         # conType : Type # None if there is no type 
         # iniExpr : Expr
-        env[0].append(Symbol(ast.conName, CType(None)))
+        var_type = ast.conType
+        if not var_type:
+            var_type = self.expr_checker(ast.iniExpr, env)
+        
+        if type(var_type) is Id:
+            structs = (sym.name for sym in env[0] if type(sym.symtype) is SType)
+            interfaces = (sym.name for sym in env[0] if type(sym.symtype) is IType)
+            
+            if var_type.name not in structs and var_type.name not in interfaces:
+                raise Undeclared(Identifier(), var_type.name)
+        
+        current_const = next(sym for sym in env[0] if sym.name == ast.conName)
+        current_const.symtype.type = var_type
         return None
     
     
