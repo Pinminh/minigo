@@ -518,7 +518,22 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # receiver: str
         # recType: Type 
         # fun: FuncDecl
-        # Cannot resolve receiver type yet in this global name collector
+        # Do we need to check if the recType is Id? -> Which exception should be thrown?
+        if not Utils.exists_type(ast.recType, env):
+            raise Undeclared(Identifier(), ast.recType.name)
+        
+        params = list(map(lambda param: param.parType, ast.fun.params))
+        invalid_type = next((typ for typ in params + [ast.fun.retType] if not Utils.exists_type(typ, env)), None)
+        if invalid_type:
+            raise Undeclared(Identifier(), invalid_type.name)
+        
+        method = Symbol(ast.fun.name, MType(params, ast.fun.retType))
+        current_receiver = Utils.lookup(ast.recType.name, env)
+        
+        if method.name in (sym.name for sym in current_receiver.symtype.elements + current_receiver.symtype.methods):
+            raise Redeclared(Method(), method.name)
+        
+        current_receiver.symtype.methods.append(method)
         return None
     
 
