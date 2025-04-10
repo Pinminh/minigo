@@ -9,6 +9,7 @@ from functools import reduce
 
 
 class Utils:
+    
     @staticmethod
     def find_duplicate(get_info, lst):
         seen = set()
@@ -17,6 +18,23 @@ class Utils:
                 return item
             seen.add(get_info(item))
         return None
+
+
+    @staticmethod
+    def exists_type(var_type, env):
+        if type(var_type) is not Id:
+            return True
+        
+        structs = (sym.name for e in env for sym in e if type(sym.symtype) is SType)
+        interfaces = (sym.name for e in env for sym in e if type(sym.symtype) is IType)
+        
+        return var_type.name in structs or var_type.name in interfaces
+
+    
+    @staticmethod
+    def lookup(name, env):
+        filtered = (sym for e in env for sym in e if sym.name == name)
+        return next(filtered, None)
 
 
 class MType:
@@ -458,14 +476,10 @@ class GlobalNameResolver(BaseVisitor, Utils):
         if not var_type:
             var_type = self.expr_checker.check(ast.varInit, env)
         
-        if type(var_type) is Id:
-            structs = (sym.name for sym in env[0] if type(sym.symtype) is SType)
-            interfaces = (sym.name for sym in env[0] if type(sym.symtype) is IType)
-            
-            if var_type.name not in structs and var_type.name not in interfaces:
-                raise Undeclared(Identifier(), var_type.name)
+        if not Utils.exists_type(var_type, env):
+            raise Undeclared(Identifier(), var_type.name)
         
-        current_var = next(sym for sym in env[0] if sym.name == ast.varName)
+        current_var = Utils.lookup(ast.varName, env)
         current_var.symtype.type = var_type
         return None
 
@@ -478,14 +492,10 @@ class GlobalNameResolver(BaseVisitor, Utils):
         if not var_type:
             var_type = self.expr_checker.check(ast.iniExpr, env)
         
-        if type(var_type) is Id:
-            structs = (sym.name for sym in env[0] if type(sym.symtype) is SType)
-            interfaces = (sym.name for sym in env[0] if type(sym.symtype) is IType)
-            
-            if var_type.name not in structs and var_type.name not in interfaces:
-                raise Undeclared(Identifier(), var_type.name)
+        if not Utils.exists_type(var_type, env):
+            raise Undeclared(Identifier(), var_type.name)
         
-        current_const = next(sym for sym in env[0] if sym.name == ast.conName)
+        current_const = Utils.lookup(ast.conName, env)
         current_const.symtype.type = var_type
         return None
     
@@ -514,7 +524,10 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # name: str
         # params:List[Type]
         # retType: Type # VoidType if there is no return type
-        return Symbol(ast.name, MType(None, None))
+        for typ in ast.params + ast.retType:
+            if not Utils.exists_type(typ, env):
+                raise Undeclared(Identifier(), typ.name)
+        return Symbol(ast.name, MType(ast.params, ast.retType))
     
     
     def visitStructType(self, ast, env):
@@ -523,19 +536,13 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # methods:List[MethodDecl]
         def check_element_type(tup):
             name, typ = tup
-            
-            if type(typ) is Id:
-                structs = (sym.name for sym in env[0] if type(sym.symtype) is SType)
-                interfaces = (sym.name for sym in env[0] if type(sym.symtype) is IType)
-            
-                if typ.name not in structs and typ.name not in interfaces:
-                    raise Undeclared(Identifier(), typ.name)
-            
+            if not Utils.exists_type(typ, env):
+                raise Undeclared(Identifier(), typ.name)
             return Symbol(name, VType(typ))
 
         elements = list(map(check_element_type, ast.elements))
         
-        current_struct = next(sym for sym in env[0] if sym.name == ast.name)
+        current_struct = Utils.lookup(ast.name, env)
         current_struct.symtype.elements = elements
         return None
     
@@ -544,10 +551,6 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # name: str
         # methods:List[Prototype]
         protos = list(map(lambda proto: self.visit(proto, env), ast.methods))
-        duplicated = Utils.find_duplicate(lambda proto: proto.name, protos)
-        if duplicated:
-            raise Redeclared(Prototype(), duplicated.name)
-        env[0].append(Symbol(ast.name, IType(protos)))
         return None
 
 
