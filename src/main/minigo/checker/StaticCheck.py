@@ -456,7 +456,7 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # varInit : Expr # None if there is no initialization
         var_type = ast.varType
         if not var_type:
-            var_type = self.expr_checker(ast.varInit, env)
+            var_type = self.expr_checker.check(ast.varInit, env)
         
         if type(var_type) is Id:
             structs = (sym.name for sym in env[0] if type(sym.symtype) is SType)
@@ -476,7 +476,7 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # iniExpr : Expr
         var_type = ast.conType
         if not var_type:
-            var_type = self.expr_checker(ast.iniExpr, env)
+            var_type = self.expr_checker.check(ast.iniExpr, env)
         
         if type(var_type) is Id:
             structs = (sym.name for sym in env[0] if type(sym.symtype) is SType)
@@ -521,11 +521,22 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # name: str
         # elements:List[Tuple[str,Type]]
         # methods:List[MethodDecl]
-        elemsyms = list(map(lambda tup: Symbol(tup[0], VType(None)), ast.elements))
-        duplicated = Utils.find_duplicate(lambda sym: sym.name, elemsyms)
-        if duplicated:
-            raise Redeclared(Field(), duplicated.name)
-        env[0].append(Symbol(ast.name, SType(elemsyms, methods=[])))
+        def check_element_type(tup):
+            name, typ = tup
+            
+            if type(typ) is Id:
+                structs = (sym.name for sym in env[0] if type(sym.symtype) is SType)
+                interfaces = (sym.name for sym in env[0] if type(sym.symtype) is IType)
+            
+                if typ.name not in structs and typ.name not in interfaces:
+                    raise Undeclared(Identifier(), typ.name)
+            
+            return Symbol(name, VType(typ))
+
+        elements = list(map(check_element_type, ast.elements))
+        
+        current_struct = next(sym for sym in env[0] if sym.name == ast.name)
+        current_struct.symtype.elements = elements
         return None
     
 
