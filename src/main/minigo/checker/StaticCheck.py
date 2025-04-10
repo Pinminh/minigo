@@ -139,8 +139,6 @@ class StaticChecker(BaseVisitor, Utils):
         # params: List[ParamDecl]
         # retType: Type # VoidType if there is no return type
         # body: Block
-        if ast.name in (symbol.name for symbol in env[0]):
-            raise Redeclared(Function(), ast.name)
         params = reduce(
             lambda acc, param: [self.visit(param, env)] + acc,
             ast.params,
@@ -505,10 +503,14 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # params: List[ParamDecl]
         # retType: Type # VoidType if there is no return type
         # body: Block
-        env[0].append(Symbol(
-            ast.name,
-            MType(None, None),
-        ))
+        params = list(map(lambda param: param.parType, ast.params))
+        invalid_type = next((typ for typ in params + [ast.retType] if not Utils.exists_type(typ, env)), None)
+        if invalid_type:
+            raise Undeclared(Identifier(), invalid_type.name)
+        
+        current_func = Utils.lookup(ast.name, env)
+        current_func.symtype.partype = params
+        current_func.symtype.rettype = ast.retType
         return None
 
     
