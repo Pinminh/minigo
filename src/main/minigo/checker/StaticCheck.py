@@ -50,7 +50,7 @@ class SType:
         self.methods = methods
     
     def __str__(self):
-        return f"SType({','.join(self.elements)},{','.join(self.methods)})"
+        return f"SType([{','.join(str(e) for e in self.elements)}],[{','.join(str(m) for m in self.methods)}])"
 
 
 class IType:
@@ -62,13 +62,12 @@ class IType:
 
 
 class Symbol:
-    def __init__(self, name, typ, value = None):
+    def __init__(self, name, typ):
         self.name = name
         self.symtype = typ
-        self.value = value
 
     def __str__(self):
-        return "Symbol(" + str(self.name) + "," + str(self.symtype) + str(self.value) + ")"
+        return "Symbol(" + str(self.name) + "," + str(self.symtype) + ")"
 
 
 class StaticChecker(BaseVisitor, Utils):
@@ -79,9 +78,9 @@ class StaticChecker(BaseVisitor, Utils):
  
     
     def check(self):
-        collector = GlobalNameCollector(self.ast)
-        collector.collect()
-        self.global_env = collector.global_env
+        resolver = GlobalNameResolver(self.ast)
+        resolver.resolve()
+        self.global_env = resolver.global_env
         for sym in self.global_env:
             print(sym)
         return self.visit(self.ast, self.global_env)
@@ -425,4 +424,115 @@ class GlobalNameCollector(BaseVisitor, Utils):
         if duplicated:
             raise Redeclared(Prototype(), duplicated.name)
         env[0].append(Symbol(ast.name, IType(protos)))
+        return None
+
+
+class GlobalNameResolver(BaseVisitor, Utils):
+    
+    def __init__(self, ast):
+        self.ast = ast
+        self.global_env = []
+        self.expr_checker = ExpressionChecker(ast)
+ 
+    
+    def resolve(self):
+        collector = GlobalNameCollector(self.ast)
+        collector.collect()
+        self.global_env = collector.global_env
+        return self.visit(self.ast, self.global_env)
+
+    
+    def visitProgram(self, ast, env):
+        # decl : List[Decl]
+        env = [env]
+        for decl in ast.decl:
+            self.visit(decl, env)
+        return None
+    
+    
+    def visitVarDecl(self, ast, env):
+        # varName : str
+        # varType : Type # None if there is no type
+        # varInit : Expr # None if there is no initialization
+        var_type = ast.varType
+        if not var_type:
+            var_type = self.expr_checker(ast.varInit, env)
+        
+        if type(var_type) is Id:
+            structs = (sym.name for sym in env[0] if type(sym.symtype) is SType)
+            interfaces = (sym.name for sym in env[0] if type(sym.symtype) is IType)
+            
+            if var_type.name not in structs and var_type.name not in interfaces:
+                raise Undeclared(Identifier(), var_type.name)
+        
+        current_var = next(sym for sym in env[0] if sym.name == ast.varName)
+        current_var.symtype.type = var_type
+        return None
+
+    
+    def visitConstDecl(self, ast, env):
+        # conName : str
+        # conType : Type # None if there is no type 
+        # iniExpr : Expr
+        env[0].append(Symbol(ast.conName, CType(None)))
+        return None
+    
+    
+    def visitFuncDecl(self, ast, env):
+        # name: str
+        # params: List[ParamDecl]
+        # retType: Type # VoidType if there is no return type
+        # body: Block
+        env[0].append(Symbol(
+            ast.name,
+            MType(None, None),
+        ))
+        return None
+
+    
+    def visitMethodDecl(self, ast, env):
+        # receiver: str
+        # recType: Type 
+        # fun: FuncDecl
+        # Cannot resolve receiver type yet in this global name collector
+        return None
+    
+
+    def visitPrototype(self, ast, env):
+        # name: str
+        # params:List[Type]
+        # retType: Type # VoidType if there is no return type
+        return Symbol(ast.name, MType(None, None))
+    
+    
+    def visitStructType(self, ast, env):
+        # name: str
+        # elements:List[Tuple[str,Type]]
+        # methods:List[MethodDecl]
+        elemsyms = list(map(lambda tup: Symbol(tup[0], VType(None)), ast.elements))
+        duplicated = Utils.find_duplicate(lambda sym: sym.name, elemsyms)
+        if duplicated:
+            raise Redeclared(Field(), duplicated.name)
+        env[0].append(Symbol(ast.name, SType(elemsyms, methods=[])))
+        return None
+    
+
+    def visitInterfaceType(self, ast, env):
+        # name: str
+        # methods:List[Prototype]
+        protos = list(map(lambda proto: self.visit(proto, env), ast.methods))
+        duplicated = Utils.find_duplicate(lambda proto: proto.name, protos)
+        if duplicated:
+            raise Redeclared(Prototype(), duplicated.name)
+        env[0].append(Symbol(ast.name, IType(protos)))
+        return None
+
+
+class ExpressionChecker(BaseVisitor, Utils):
+    
+    def __init__(self, ast):
+        self.ast = ast
+    
+    
+    def check(self, expr, env):
         return None
