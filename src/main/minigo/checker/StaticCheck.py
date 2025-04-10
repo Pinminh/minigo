@@ -76,7 +76,7 @@ class IType:
         self.prototypes = prototypes
     
     def __str__(self):
-        return f"IType({','.join(str(proto) for proto in self.prototypes)})"
+        return f"IType([{','.join(str(proto) for proto in self.prototypes)}])"
 
 
 class Symbol:
@@ -524,7 +524,7 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # name: str
         # params:List[Type]
         # retType: Type # VoidType if there is no return type
-        for typ in ast.params + ast.retType:
+        for typ in ast.params + [ast.retType]:
             if not Utils.exists_type(typ, env):
                 raise Undeclared(Identifier(), typ.name)
         return Symbol(ast.name, MType(ast.params, ast.retType))
@@ -551,6 +551,8 @@ class GlobalNameResolver(BaseVisitor, Utils):
         # name: str
         # methods:List[Prototype]
         protos = list(map(lambda proto: self.visit(proto, env), ast.methods))
+        current_interface = Utils.lookup(ast.name, env)
+        current_interface.symtype.prototypes = protos
         return None
 
 
